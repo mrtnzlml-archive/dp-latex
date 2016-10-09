@@ -1,0 +1,11 @@
+\chapter*{Abstract}
+The aim of this diploma thesis is to create an application that can process the output data from weather stations, can show these data in a web browser and can handle and show web camera view.
+
+To solve this problem the master server was created. It acts as the source of truth and provides GraphQL API to the outside world. Web interface and all weather stations communicate with the server only through this API. Minimalist microservice for video processing from webcams was also created in addition to the main server.
+
+Created solution offers the ability to connect any weather station, because the API is not dependent on the type of station. Server focuses on the recieved physical quantities, not their origin, so it can work with any number of data sources from any company. API is not only able to receive data, but it can also provide these data. Server among other things allows the aggregation of historical data and allows them to be exported.
+
+\vfill
+
+\section*{Key Words}
+API, Docker, FFmpeg, GraphQL, HLS, weather station, Nette Framework, PHP, React, web camera

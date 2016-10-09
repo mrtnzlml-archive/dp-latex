@@ -1,0 +1,227 @@
+\chapter{Druhy a formáty sdílených dat}
+Pro ověření funkčnosti návrhu v~této práci jsou k~dispozici dvě meteorologické stanice a jedna webová kamera. Z~dalších kapitol bude jasné, že na zdroji dat nezáleží, což je hlavní myšlenka, na které vše stojí. Tato úvodní část tedy slouží spíše pro ukázku toho, jak je oblast meteostanic různorodá z~pohledu formátů dat a přenosu informací. Díky tomuto pozorování je výsledná aplikace sice mnohem složitější, ale není závislá na konkrétních zařízeních.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Meteostanice v~laboratoři EU 411}
+Meteostanice v~laboratoři je značky Technoline WS-3650-IT. Tato stanice umí měřit základní fyzikální veličiny týkající se počasí, jako jsou například teplota (venkovní i vnitřní), tlak a relativní vlhkost (opět venkovní i vnitřní). Tato meteostanice umí měřit také rychlost větru (včetně směru a poryvu) a~srážky. Pro toto měření je však nutné mít k~dispozici přídavný anemometr a srážkoměr. Ty nejsou v~laboratoři EU 411 nainstalovány.
+
+K~meteostanici bohužel není k~dispozici žádná technická dokumentace a výrobce není ochoten tuto dokumentaci poskytnout. Tím pádem je téměř nemožné dobře implementovat programové zpracování dat, které putují přes hardwarové rozhraní COM.
+
+Pro příjem dat musí být stanice připojena k~počítači, na kterém je spuštěn program HeavyWeatherPro V1.1. Tento program zobrazuje historii na\-mě\-ře\-ných dat, což jinými slovy znamená, že si je někde musí uchovávat. A~právě zde je jedno z~možných řešení problému s~chybějící technickou dokumentací. HeavyWeatherPro si totiž data ukládá v~binárním formátu do jednoho souboru, který je možné programově přečíst a získat všechny potřebné informace. Ve výsledku je tento postup dokonce možná lepší, než snažit se rozluštit probíhající komunikaci. K~dispozici je totiž celá naměřená historie. Ta zde sahá až na začátek roku 2015.
+
+\begin{figure}[h]
+    \centering
+	\makebox[\textwidth]{\includegraphics[width=0.8\textwidth]{img/meteoEU411.jpg}}
+	\caption{Meteostanice Technoline WS-3650-IT}
+	\label{fig:stanice}
+\end{figure}
+
+\subsection{Binární formát dat}
+Již zmíněný program HeavyWeatherPro V1.1, který je na počítači nainstalován, si ukládá historii dat do souboru \texttt{history.dat}. Jedná se o~binární formát, kdy každý řádek je 56 bytů dlouhý a obsahuje informace, které jsou podrobně rozepsány v~tabulce \ref{tab:binaryFormat}.
+
+\begin{table}[h]
+	\centering
+	\caption{Binární formát dat meteostanice v~EU 411}
+	\label{tab:binaryFormat}
+	\begin{tabular}{|c|l|l|l|}
+		\hline 
+		Pozice & Typ (délka) & Význam & Jednotka \\ 
+		\hline \hline
+		00 & Double (8) & Časové razítko & Dny od 12/30/1899 \\ 
+		\hline 
+		08 & Float (4) & Absolutní tlak & hPa (mBar) \\ 
+		\hline 
+		12 & Float (4) & Relativní tlak & hPa (mBar) \\ 
+		\hline 
+		16 & Float (4) & Rychlost větru & m/s \\ 
+		\hline 
+		20 & ULong (4) & Směr větru & viz tabulka \ref{tab:windFormat} \\ 
+		\hline 
+		24 & Float (4) & Poryv větru & m/s \\ 
+		\hline 
+		28 & Float (4) & Celkové srážky & mm \\ 
+		\hline 
+		32 & Float (4) & Nové srážky & mm \\ 
+		\hline 
+		36 & Float (4) & Vnitřní teplota & Celsius \\ 
+		\hline 
+		40 & Float (4) & Venkovní teplota & Celsius \\ 
+		\hline 
+		44 & Float (4) & Vnitřní vlhkost & procento \\ 
+		\hline 
+		45 & Float (4) & Venkovní vlhkost & procento \\ 
+		\hline 
+		52 & ULong (4) & neznámé & vždy nula \\ 
+		\hline 
+	\end{tabular}
+\end{table}
+
+Parsování takového souboru je např. v~PHP možné pomocí vestavěné funkce \texttt{unpack}\footnote{Příklad PHP programu, který je schopen parsovat tento formát souboru je k~dispozici na adrese \url{https://gist.github.com/mrtnzlml/624c55f792f8b821a000bb04f0b0e0ac}. JavaScript varianta je pak popsána později v~rámci konkretizačního členu.}. K~dispozici jsou základní informace o~prostředí, ve kterém se stanice (resp. její senzory) náchází. U~většiny položek je z~názvu jasné, co znamenají. Výjimku tvoří pouze časové razítko a směr větru. Časové razítko je dáno ve dnech od 30. 12. 1899. To je velmi netradiční a je nutné provést jednoduchý přepočet. Například záznam, který má hodnotu \texttt{42116.364583333} dnů ve skutečnosti znamená datum 22. 4. 2015 s~časem 8:45. Ideální je původní hodnotu přepočítat na sekundy, takže se přičtením této hodnoty zachová dostatečně vysoká přesnost:
+
+\begin{minted}{javascript}
+let days = 42116.364583333;
+let seconds = Math.round(days * 24 * 3600);
+new Date(Date.UTC(1899, 11, 30, 0, 0, seconds))
+// vrátí: 2015-04-22T08:45:00.000Z
+\end{minted}
+
+Směr větru stanice odesílá stanice jako celé číslo v~rozsahu 0 - 15. Jedná se tedy o~16 hodnot, kdy azimut je násobkem tohoto čísla a 22.5, jak je vidět v~tabulce \ref{tab:windFormat}.
+
+\begin{table}[h]
+	\centering
+	\caption{Formát větrné růžice a odpovídající azimuty}
+	\label{tab:windFormat}
+	\begin{tabular}{|l|c|c|c|c|c|c|c|c|}
+		\hline
+		Data & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\
+		\hline
+		Směr & S & SSV & SV & VSV & V & VJV & JV & JJV \\
+		\hline
+		Azimut & 0 & 22.5 & 45 & 67.5 & 90 & 112.5 & 135 & 157.5 \\
+		\hline \hline
+		Data & 8 & 9 & 10 & 11 & 12 & 13 & 14 & 15 \\
+		\hline
+		Směr & J & JJZ & JZ & ZJZ & Z & ZSZ & SZ & SSZ \\
+		\hline
+		Azimut & 180 & 202.5 & 225 & 247.5 & 270 & 292.5 & 315 & 337.5 \\
+		\hline
+	\end{tabular}
+\end{table}
+
+Bohužel všechny zmíněné informace nejsou oficiální a pochází ze zdrojových kódů jiných programů, které se snaží tomuto konkrétnímu formátu dat také porozumět. Dokonce stanice od stejného výrobce nemají formát dat jednotný a dokumentace není nikde k~dispozici. Navíc tyto informace platí pro stanici La Crosse WS-3610 a je jen štěstí, že formát dat je stejný s~meteostanicí v~laboratoři EU 411. I~tak jsou některé oblasti nejasné a stejně tomu je i u~mezních hodnot, které může stanice odesílat. Jeden příklad za všechny: tato stanice může odeslat informaci obsahující rychlost větru 51 m/s. V~takovém případě to však znamená, že je hodnota neplatná a je mimo rozsah (nebo není připojen anemometr). Proto je nutné znát alespoň základní rozsahy a hodnoty mimo rozsahy prohlásit za neplatné a vyřadit je. Ani tyto rozsahy bohužel nejsou k~dispozici pro všechny hodnoty, které stanice dokáže změřit.
+
+Vzhledem ke všem těmto překážkám je tato stanice spíše nevhodná pro napojení do libovolného informačního systému. Je důležité odesílaným datům bez pochyb rozumět a to se zde říci nedá. I~přes všechny tyto komplikace je však meteostanice do systému zapojena a je možné s~daty pracovat právě díky souboru \texttt{history.dat}. Detailněji je způsob přenosu informace popsán v~třetí části této práce zabývající se  architekturou tzv. konkretizačního uzlu.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{IP kamera}
+
+\begin{figure}[h]
+    \centering
+	\makebox[\textwidth]{\includegraphics[width=0.8\textwidth]{img/aircam.png}}
+	\caption{IP kamera airCam od společnosti Ubiquity Networks}
+	\small zdroj: Ubiquity Networks airCam User Guide
+	\label{fig:zakladniNavrh}
+\end{figure}
+
+IP kamera, která byla k~dispozici v~této práci je \textit{airCam} \cite{aircam} od americké společnosti Ubiquiti Networks. Jedná se o~dříve běžně dostupnou kameru pro vnitřní i vnější použití. Tato IP kamera je napájena prostřednictvím PoE (24 V, 0.5 A). Tento ethernetový kabel slouží zároveň pro komunikaci s~IP kamerou. Na těchto kamerách je běžně spuštěný Linuxový server a tak je tomu i zde. Ten slouží zejména pro streamování (spojité odesílání videozáznamu). Kamera však nabízí i webový server s~jednoduchou aplikací pro ovládání a nastavování parametrů záznamu a v~neposlední řadě obsahuje i SSH server, díky čemuž lze zjistit o~kameře podrobnější informace (zjednodušený výpis):
+
+\begin{minted}{text}
+$ ssh ubnt@192.168.0.123
+ ubnt@192.168.0.123's password: 
+
+ BusyBox v1.18.4 (2013-06-09 00:59:08 EEST) built-in shell
+
+AirCam.v1.2# cat /proc/version
+ Linux version 2.6.28 (buildd@builder) (gcc version 4.5.2 (Linaro GCC 4.5-2011.02-0) ) #1 PREEMPT Sun Jun 9 01:03:42 EEST 2013
+AirCam.v1.2# cat /proc/cpuinfo
+ Processor       : FA626TE rev 1 (v5l)
+ BogoMIPS        : 532.48
+ Features        : swp half thumb 
+ CPU implementer : 0x66
+ CPU architecture: 5TE
+ CPU variant     : 0x0
+ CPU part        : 0x626
+ CPU revision    : 1
+ Hardware        : Faraday GM8126
+AirCam.v1.2# netstat -lnp
+ Active Internet connections (only servers)
+ Proto Local Address Foreign Address State  PID/Program name    
+ tcp   0.0.0.0:554   0.0.0.0:*       LISTEN 6022/ubnt-streamer
+ tcp   0.0.0.0:80    0.0.0.0:*       LISTEN 6016/lighttpd
+ tcp   0.0.0.0:22    0.0.0.0:*       LISTEN 6020/sshd
+ tcp   0.0.0.0:443   0.0.0.0:*       LISTEN 6016/lighttpd
+ tcp   :::22         :::*            LISTEN 6020/sshd
+ udp   0.0.0.0:10001 0.0.0.0:*               6014/infctld
+\end{minted}
+% $
+
+Z~předchozího výpisu (zejména pak z~poslední \texttt{netstat} části) je vidět, že na IP kameře je otevřeno pět portů. Port 10001 je speciální port pro ostatní zařízení společnosti Ubiquiti Networks. Slouží k~odhalování známých zařízení v~síti. Dále je zde klasický port 22 pro SSH a 80 resp. 443 pro HTTP resp. HTTPS komunikaci. Poslední port je 554, který slouží právě ke streamování videa.
+
+\subsection{Streamování videa}
+Streamování u~této kamery probíhá prostřednictvím protokolu RTSP (Real Time Streaming Protocol). Ve výchozím nastavení jsou k~dispozici čtyři adresy rozlišené podle požadované kvality obrazu:
+
+\begin{minted}{text}
+rtsp://192.168.0.123:554/live/ch00_0 - Plné rozlišení
+rtsp://192.168.0.123:554/live/ch01_0 - Poloviční rozlišení
+rtsp://192.168.0.123:554/live/ch02_0 - Čtvrtinové rozlišení
+rtsp://192.168.0.123:554/live/ch03_0 - Malý náhled
+\end{minted}
+
+Přímo v~IP kameře v~souboru \texttt{/etc/aircam-playlist.json} lze zjistit, jaké mají tyto streamy nastavení. Toto nastavení je pro každý stream téměr stejné, jen se liší rozměry výsledného videa a přenosová rychlost (výchozí hodnoty):
+
+\begin{minted}{text}
+live/ch00_0: 1280x720 @ 25 FPS (max bitrate 4096)
+live/ch01_0: 640x368  @ 25 FPS (max bitrate 1024)
+live/ch02_0: 320x176  @ 25 FPS (max bitrate 256)
+live/ch03_0: 160x96   @ 25 FPS (max bitrate 64)
+\end{minted}
+
+Nejdůležitější jsou adresy jednotlivých streamů pro pozdější zpracování. Jelikož se jedná o~RTSP protokol, tak nelze jednoduše spustit tento stream ve webovém prohlížeči, protože tento protokol není podporován. Bude tedy nutné vytvořit mezičlen, který bude přijímat data ze streamu IP kamery a bude je transformovat na něco srozumitelného pro prohlížeče. Srozumitelným formátem je například HLS, čehož lze snadno dosáhnout pomocí programu FFmpeg \cite{ffmpeg}:
+
+\begin{minted}{text}
+$ ffmpeg -i rtsp://user:pass@192.168.0.123:554/live/ch01_0 \
+    -hls_flags delete_segments+append_list \
+    -use_localtime 1 \
+    stream.m3u8
+\end{minted}
+% $
+
+Tento příkaz na Linuxovém serveru začne přijímat stream z~dané adresy a průběžně jej bude ukládat ve formátu připraveném pro HLS. Konkrétně se vždy vytvoří soubor \texttt{stream.m3u8}, který obsahuje seznam datových souborů, které obsahují jednotlivé fragmenty videa:
+
+\begin{minted}{text}
+#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-TARGETDURATION:17
+#EXT-X-MEDIA-SEQUENCE:351
+#EXTINF:16.666667,
+stream-1488616019.ts
+#EXTINF:16.666667,
+stream-1488616036.ts
+#EXTINF:16.666667,
+stream-1488616053.ts
+#EXTINF:16.666667,
+stream-1488616069.ts
+#EXTINF:5.133333,
+stream-1488616086.ts
+#EXT-X-ENDLIST
+\end{minted}
+
+FFmpeg se zde (kromě převodu RTSP na sekvence videa) chová jako krátká dočasná paměť. Vstupní stream rozděluje do menších datových souborů a po nějakém čase je po sobě zase maže. Videopřehrávači v~prohlížeči potom stačí pouze poslat umístění souboru \texttt{stream.m3u8}. Zodpovědností tohoto přehrávače je jednou za čas stahovat aktualizovaný seznam fragmentů videa a zároveň tyto fragmenty stahovat, správně seřadit a spouštět. Výsledný efekt je nepřetržité a nikdy nekončící video. Následuje ukázka minimálního HTML kódu, který je potřeba pro přehrání takového streamu v~prohlížeči s~využitím knihovny Clappr \cite{clappr}:
+
+\begin{minted}[breakafter=/]{html}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script
+    type="text/javascript"
+    src="https://cdn.jsdelivr.net/clappr/latest/clappr.min.js">
+  </script>
+</head>
+<body>
+  <div id="player1"></div>
+  <script>
+    var player = new Clappr.Player({
+      source: "stream.m3u8",
+      parentId: "#player1",
+    });
+  </script>
+</body>
+</html>
+\end{minted}
+
+Tato knihovna interně využívá knihovnu HLS.js \cite{hlsjs}, která zajišťuje kompatibilitu se všemi prohlížeči, které podporují MSE (HTML 5). To jsou v~dnešní době tyto prohlížeče (a další):
+
+\begin{itemize}
+\item Chrome 34+
+\item Firefox 42+
+\item Internet Explorer 11+
+\item Edge 10+
+\end{itemize}
+
+Na závěr je důležité zmínit se o~vznikající prodlevě při zpracování videa. Z~toho důvodu, že FFmpeg musí nejdříve vstupní stream zpracovat a vytvořit krátkou frontu útržků videa, tak prodleva mezi realitou a pozorováním na monitoru je asi jedna minuta. Toto je však běžný jev i u~společností, které se zabývají real-time přenosem videa, takže to nelze považovat za nevýhodu, ale spíše za nutné zlo. Je zkrátka potřeba vytvořit alespoň jeden fragment, aby bylo možné něco na straně prohlížeče přehrát. Prakticky je však potřeba vytvořit alespoň dva fragmenty videa, protože je třeba začít přehrávat první a zároveň na pozadí stahovat druhý pro plynulé navázání obrazu.
+
+\subsection{Způsob připojení kamery do veřejné sítě}
+Po připojení kamery do sítě běžně získává kamera svojí dočasnou IP adresu z~DHCP serveru. V~případě domácnosti je to zpravidla router. Stejným způsobem získávají IP adresu ve vnitřní síti také počítače a jiná zařízení. Pro pohodlnější obsluhu je vhodné nastavit této kameře statickou IP adresu, takže se nebude po čase měnit. Takto byla v~předchozích příkladech kameře nastavena IP adresa \texttt{192.168.0.123}. Problém však nastává u~kamer, které musí být viditelné z~veřejné sítě, což je většina kamer pro tuto aplikaci. V~takovém případě je nutné mít k~dispozici veřejnou IP adresu a na vstupním routeru nastavit NAT tak, aby překládal např. určené porty na statické adresy IP kamer ve vnitřní síti. To znamená, že každá kamera bude mít jinou privátní IP adresu s~porty 554 (RTSP), ale NAT je bude vnějšímu světu ukazovat na jedné veřejné IP adrese, ale pokaždé s~jiným portem. Do aplikace pro zpracování streamu se pak bude zadávat právě tato veřejná adresa.

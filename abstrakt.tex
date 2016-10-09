@@ -1,0 +1,13 @@
+% http://www.herout.net/blog/2013/12/jak-psat-abstrakt/
+
+\chapter*{Abstrakt}
+Cílem této diplomové práce je vytvoření takové aplikace, která zvládne zpracovávat výstupní data z~meteorologických stanic, dokáže je zobrazit ve we\-bo\-vém prohlížeči a dokáže tato data doplnit o~záznam z~webové kamery.
+
+Pro vyřešení tohoto zadání byl vytvořen jeden hlavní server, který se chová jako zdroj pravdy a poskytuje vnějšímu světu GraphQL API. Webové rozhraní i všechny meteostanice komunikují se serverem pouze pro\-střed\-nic\-tvím tohoto API. Kromě hlavního serveru byla vytvořena také minimalistická mikroslužba pro zpracovávání videa z~webových kamer.
+
+Vytvořené řešení nabízí možnost připojit jakoukoliv meteorologickou stanici, protože API není závislé na typu stanice. Server se zaměřuje na při\-jí\-ma\-né fyzikální veličiny, nikoliv na jejich původ, takže je možné pracovat s~libovolným počtem zdrojů dat od libovolných výrobců. API neslouží pouze pro přijímání dat, ale také pro jejich vybavování. Server mimo jiného počítá agregace historických dat a umožňuje jejich export.
+
+\vfill
+
+\section*{Klíčová slova}
+API, Docker, FFmpeg, GraphQL, HLS, meteorologická stanice, Nette Framework, PHP, React, webová kamera

@@ -1,0 +1,114 @@
+\documentclass[oneside,12pt,a4paper,final]{report} %opt: draft/final
+\usepackage[czech]{babel}
+\usepackage[utf8]{inputenc}
+
+\usepackage{soulutf8} % \hl{...}
+
+\usepackage{graphicx} % support the \includegraphics command and options
+\usepackage{hyperref} % links in \tableofcontents
+
+\usepackage{xcolor}
+\definecolor{codebg}{rgb}{0.98,0.98,0.98}
+
+\usepackage{minted} % syntax highlighter
+\usemintedstyle{default} %manni,borland,tango,default
+%\setminted{breaklines,bgcolor=codebg,fontfamily=tt}
+\setminted{breaklines,fontfamily=tt}
+
+\usepackage{pdfpages} % \includepdf
+\usepackage{float} % figure [H]
+\usepackage{amsmath} % linebreaks in math mode
+\usepackage{amssymb} % \checkmark
+
+\usepackage{enumitem}
+\setlist{noitemsep,label=\raisebox{0.25ex}{\tiny$\bullet$}}
+
+\usepackage{dirtree} % struktura slozek
+\DTsetlength{0.2em}{1em}{0.3em}{0.4pt}{0pt}
+
+\hoffset=0.5cm % posune stranku ->
+
+\hypersetup{
+	colorlinks,
+	citecolor=black, %blue
+	filecolor=black,
+	linkcolor=black, %red
+	urlcolor=black %blue
+}
+
+\addto\captionsczech{\renewcommand{\chaptername}{}} %remove "chapter" word
+
+\makeatletter
+\newcommand{\tocfill}{\cleaders\hbox{$\m@th \mkern\@dotsep mu . \mkern\@dotsep mu$}\hfill}
+\makeatother
+\newcommand{\abbrlabel}[1]{\makebox[5cm][l]{\textbf{#1}\ \tocfill}}
+\newenvironment{abbreviations}{\begin{list}{}{\renewcommand{\makelabel}{\abbrlabel}%
+        \setlength{\labelwidth}{5cm}\setlength{\leftmargin}{\labelwidth+\labelsep}%
+                                              \setlength{\itemsep}{0pt}}}{\end{list}}
+
+\newcommand{\namesig}[2][5cm]{%
+  \begin{tabular}{@{}p{#1}@{}}
+    #2 \\[5\normalbaselineskip] \dotfill \\[0pt]
+    {\small \textit{Podpis}}
+  \end{tabular}
+}
+
+%http://mirrors.nic.cz/tex-archive/macros/latex/contrib/tcolorbox/tcolorbox.pdf
+%\usepackage[many]{tcolorbox}
+%\newtcolorbox{tip}[1]{title=#1, sharp corners, colback=yellow!50}
+%\begin{tip}{Title}
+%	test
+%\end{tip}
+
+\interfootnotelinepenalty=10000 %BRUTAL!
+
+\setcounter{tocdepth}{3} % http://tex.stackexchange.com/a/17879
+\setcounter{secnumdepth}{3}
+
+\begin{document}
+
+%%% TITLE
+\pagestyle{empty}
+\begin{titlepage}
+\noindent
+\begin{center}
+	{\LARGE ZÁPADOČESKÁ UNIVERZITA V~PLZNI} \\[0.1cm]
+	{\LARGE FAKULTA ELEKTROTECHNICKÁ} \\[0.4cm]
+	{\Large\sc Katedra elektroenergetiky a~ekologie} \\
+	\vspace{5cm}
+	{\Huge\sc Diplomová práce} \\
+	\vspace{1cm}
+	{\large Vizualizace dat z meteostanice\\}
+	\vspace{1cm}
+	{\large Visualization of weather station data}
+\end{center}
+\vfill
+Autor práce: Bc. Martin Zlámal\\
+Vedoucí práce: Ing. Martin SÝKORA, Ph.D. \hfill Plzeň 2017
+\end{titlepage}
+
+\pagestyle{plain}
+
+\includepdf[pages={1}]{img/zadani-front.jpg}
+\includepdf[pages={1}]{img/zadani-back.jpg}
+
+\input{abstrakt.tex}
+\pagenumbering{roman}
+\input{abstract.tex}
+\input{prohlaseni.tex}
+
+\tableofcontents
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{\listfigurename}
+\listoffigures
+
+\input{zkratky.tex}
+\input{uvod.tex}
+\input{chapter1.tex}
+\input{chapter2.tex}
+\input{chapter3.tex}
+\input{zaver.tex}
+\input{zdroje.tex}
+
+\end{document}
