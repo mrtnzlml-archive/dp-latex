@@ -8,12 +8,12 @@ Meteostanice v~laboratoři je značky Technoline WS-3650-IT. Tato stanice umí m
 
 K~meteostanici bohužel není k~dispozici žádná technická dokumentace a výrobce není ochoten tuto dokumentaci poskytnout. Tím pádem je téměř nemožné dobře implementovat programové zpracování dat, které putují přes hardwarové rozhraní COM.
 
-Pro příjem dat musí být stanice připojena k~počítači, na kterém je spuštěn program HeavyWeatherPro V1.1. Tento program zobrazuje historii na\-mě\-ře\-ných dat, což jinými slovy znamená, že si je někde musí uchovávat. A~právě zde je jedno z~možných řešení problému s~chybějící technickou dokumentací. HeavyWeatherPro si totiž data ukládá v~binárním formátu do jednoho souboru, který je možné programově přečíst a získat všechny potřebné informace. Ve výsledku je tento postup dokonce možná lepší, než snažit se rozluštit probíhající komunikaci. K~dispozici je totiž celá naměřená historie. Ta zde sahá až na začátek roku 2015.
+Pro příjem dat musí být stanice připojena k~počítači, na kterém je spuštěn program HeavyWeatherPro V1.1. Tento program zobrazuje historii na\-mě\-ře\-ných dat, což jinými slovy znamená, že si je někde musí uchovávat. A~právě zde je jedno z~možných řešení problému s~chybějící technickou dokumentací. HeavyWeatherPro si totiž data ukládá v~binárním formátu do jednoho souboru, který je možné programově přečíst a získat všechny potřebné informace. Ve výsledku je tento postup dokonce možná lepší, než snažit se rozluštit probíhající komunikaci. K~dispozici je totiž celá naměřená historie, která sahá až na začátek roku 2015.
 
 \begin{figure}[h]
     \centering
 	\makebox[\textwidth]{\includegraphics[width=0.8\textwidth]{img/meteoEU411.jpg}}
-	\caption{Meteostanice Technoline WS-3650-IT}
+	\caption{Meteostanice Technoline WS–3650–IT}
 	\label{fig:stanice}
 \end{figure}
 
@@ -102,7 +102,7 @@ Vzhledem ke všem těmto překážkám je tato stanice spíše nevhodná pro nap
 	\makebox[\textwidth]{\includegraphics[width=0.8\textwidth]{img/aircam.png}}
 	\caption{IP kamera airCam od společnosti Ubiquity Networks}
 	\small zdroj: Ubiquity Networks airCam User Guide
-	\label{fig:zakladniNavrh}
+	\label{fig:aircam}
 \end{figure}
 
 IP kamera, která byla k~dispozici v~této práci je \textit{airCam} \cite{aircam} od americké společnosti Ubiquiti Networks. Jedná se o~dříve běžně dostupnou kameru pro vnitřní i vnější použití. Tato IP kamera je napájena prostřednictvím PoE (24 V, 0.5 A). Tento ethernetový kabel slouží zároveň pro komunikaci s~IP kamerou. Na těchto kamerách je běžně spuštěný Linuxový server a tak je tomu i zde. Ten slouží zejména pro streamování (spojité odesílání videozáznamu). Kamera však nabízí i webový server s~jednoduchou aplikací pro ovládání a nastavování parametrů záznamu a v~neposlední řadě obsahuje i SSH server, díky čemuž lze zjistit o~kameře podrobnější informace (zjednodušený výpis):

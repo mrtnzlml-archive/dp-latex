@@ -36,8 +36,6 @@
 	urlcolor=black %blue
 }
 
-\addto\captionsczech{\renewcommand{\chaptername}{}} %remove "chapter" word
-
 \makeatletter
 \newcommand{\tocfill}{\cleaders\hbox{$\m@th \mkern\@dotsep mu . \mkern\@dotsep mu$}\hfill}
 \makeatother
@@ -65,6 +63,11 @@
 \setcounter{tocdepth}{3} % http://tex.stackexchange.com/a/17879
 \setcounter{secnumdepth}{3}
 
+\usepackage{titlesec}
+\titleformat{\chapter}[display]{\normalfont\huge\bfseries}{\thechapter}{20pt}{\Huge}
+%\titlespacing*{\chapter}{0pt}{-50pt}{40pt}
+\titlespacing*{\chapter}{0pt}{0pt}{40pt}
+
 \begin{document}
 
 %%% TITLE
@@ -89,8 +92,8 @@ Vedoucí práce: Ing. Martin SÝKORA, Ph.D. \hfill Plzeň 2017
 
 \pagestyle{plain}
 
-\includepdf[pages={1}]{img/zadani-front.jpg}
-\includepdf[pages={1}]{img/zadani-back.jpg}
+%\includepdf[pages={1}]{img/zadani-front.jpg}
+%\includepdf[pages={1}]{img/zadani-back.jpg}
 
 \input{abstrakt.tex}
 \pagenumbering{roman}
